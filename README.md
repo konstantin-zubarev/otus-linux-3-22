@@ -39,7 +39,7 @@ EOL
 [root@r1 ~]# yum install -y quagga
 ```
 
-Так как на `r2` и `r3` через `shell-provisioning` мы удалили дефолтные маршруты, создаваемые при поднятии стенда в VirtualBox, добавим дефолтные маршруты через `r1`, иначе не сможем установить `quagga` из репозиотрия CentOS 7. Также включим NAT на `r1`:
+Так как на **r2** и **r3** через `shell-provisioning` мы удалили дефолтные маршруты, создаваемые при поднятии стенда в VirtualBox, добавим дефолтные маршруты через **r1**, иначе не сможем установить `quagga` из репозиотрия CentOS 7. Также включим NAT на **r1**:
 ```
 [root@r1 ~]# systemctl enable --now firewalld
 [root@r1 ~]# firewall-cmd --change-zone=eth0 --zone=external --permanent
@@ -187,7 +187,7 @@ default via 172.16.2.1 dev eth1 proto zebra metric 10
 Содержимое конфигурационных файлов `/etc/quagga/zebra.conf` и `/etc/quagga/ospfd.conf` в дальнейшем будем использовать в шаблонах j2 для ansible. Выглядят эти файлы следующим образом:
 
 <details>
-  <summary>На роутере **r1**:</summary>
+  <summary>На роутере r1:</summary>
 
 ```
 [root@r1 ~]# cat /etc/quagga/zebra.conf
@@ -246,7 +246,7 @@ line vty
 </details>
 
 <details>
-  <summary>На роутере **r2**:</summary>
+  <summary>На роутере r2:</summary>
 
 ```
 [root@r2 ~]# cat /etc/quagga/zebra.conf
@@ -305,7 +305,7 @@ line vty
 
 
 <details>
-  <summary>На роутере **r3**:</summary>
+  <summary>На роутере r3:</summary>
 
 ```
 [root@r3 ~]# cat /etc/quagga/zebra.conf
@@ -446,7 +446,7 @@ listening on eth1, link-type EN10MB (Ethernet), capture size 262144 bytes
 Видим, что `ICMP echo request` уходит с `eth2`, а `ICMP echo reply` приходит уже на `eth1`.
 
 <details>
-  <summary>Конфиги на **r3**:</summary>
+  <summary>Конфиги на r3:</summary>
 
 ```
 [root@r3 ~]# cat /etc/quagga/zebra.conf
