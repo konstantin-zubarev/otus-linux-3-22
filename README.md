@@ -21,7 +21,7 @@
 [root@r1 ~]# systemctl restart network
 ```
 
-На всех роутерах для назначения дополнительного статического IP-адреса на loopback-интерфейс создадим субинтерфейс lo:2. Сделаем это с помощью конфигурационного файла /etc/sysconfig/network-scripts/ifcfg-lo.2:
+На всех роутерах для назначения дополнительного статического IP-адреса на loopback-интерфейс создадим субинтерфейс `lo:2`. Сделаем это с помощью конфигурационного файла `/etc/sysconfig/network-scripts/ifcfg-lo.2`:
 ```
 [root@r1 ~]# cat > /etc/sysconfig/network-scripts/ifcfg-lo.2 <<EOL
 DEVICE=lo:2
