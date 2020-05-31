@@ -73,6 +73,10 @@ EOL
 [root@r2 ~]# systemctl enable --now firewalld
 [root@r2 ~]# firewall-cmd --add-protocol=ospf --permanent
 [root@r2 ~]# firewall-cmd --reload
+
+[root@r3 ~]# systemctl enable --now firewalld
+[root@r3 ~]# firewall-cmd --add-protocol=ospf --permanent
+[root@r3 ~]# firewall-cmd --reload
 ```
 
 Для конфигурирования программных маршрутизаторов используется утилита `vtysh`. Натроим с её помощью процессы OSPF на роутерах:
