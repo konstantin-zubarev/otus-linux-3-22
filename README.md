@@ -23,23 +23,24 @@
 
 На всех роутерах для назначения дополнительного статического IP-адреса на loopback-интерфейс создадим субинтерфейс `lo:2`. Сделаем это с помощью конфигурационного файла `/etc/sysconfig/network-scripts/ifcfg-lo.2`:
 ```
-[root@r1 ~]# cat > /etc/sysconfig/network-scripts/ifcfg-lo.2 <<EOL
+[root@r1 ~]# cat > /etc/sysconfig/network-scripts/ifcfg-lo.2 <<EOF
 DEVICE=lo:2
 IPADDR=10.0.0.1
 PREFIX=32
 NETWORK=10.0.0.1
 ONBOOT=yes
-EOL
+EOF
 
 [root@r1 ~]# systemctl restart network
 ```
 
-Установим `quagga`:
+Установим `quagga` и `tcpdump` на r1:
 ```
 [root@r1 ~]# yum install -y quagga
+[root@r1 ~]# yum install -y tcpdump
 ```
 
-Так как на **r2** и **r3** через `shell-provisioning` мы удалили дефолтные маршруты, создаваемые при поднятии стенда в VirtualBox, добавим дефолтные маршруты через **r1**, иначе не сможем установить `quagga` из репозиотрия CentOS 7. Также включим NAT на **r1**:
+Назначим интерфейсы на **r1** в соответсвующие зоны, включим `masquerade` и установим `quagga` и `tcpdump` на r2 и r3:
 ```
 [root@r1 ~]# systemctl enable --now firewalld
 [root@r1 ~]# firewall-cmd --change-zone=eth0 --zone=external --permanent
@@ -48,12 +49,17 @@ EOL
 [root@r1 ~]# firewall-cmd --zone=external --add-masquerade --permanent
 [root@r1 ~]# firewall-cmd --reload
 
-[root@r2 ~]# ip route add default via 172.16.1.1 dev eth1
 [root@r2 ~]# yum install -y quagga
-[root@r2 ~]# ip route del default
-[root@r3 ~]# ip route add default via 172.16.2.1 dev eth1
+[root@r2 ~]# yum install -y tcpdump
 [root@r3 ~]# yum install -y quagga
-[root@r3 ~]# ip route del default
+[root@r3 ~]# yum install -y tcpdump
+```
+Удалим дефолтный маршрут на r2 и r3, созданный Vagrant'ом, чтобы позже получить его от r1 через ospf:
+```
+[root@r2 ~]# echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+[root@r2 ~]# systemctl restart network
+[root@r3 ~]# echo "DEFROUTE=no" >> /etc/sysconfig/network-scripts/ifcfg-eth0
+[root@r3 ~]# systemctl restart network
 ```
 
 Для корректной работы OSPF необходимо создать файл `/etc/quagga/ospfd.conf` с правами для `quagga:quaggavt`. Это нужно для работы демона ospfd и возможности управляющей утилите zebra писать в конфигурационные файлы. Также нужно задать  разрешения selinux с помощью переключателя `zebra_write_config`:
@@ -551,16 +557,14 @@ listening on eth2, link-type EN10MB (Ethernet), capture size 262144 bytes
 
 Видим, что `ICMP echo request` и `ICMP echo reply` снова ходят через `eth2`.
 
-### Критерии оценки
+**Проверка ДЗ**
 
-- Есть схема с указанием устройств, каналов, интерфейсов и адресов (1 балл); 
-- Предоставлен стенд Vagrant с развёртыванием ansible (1 балл);
-- Предоставленный стенд имеет корректно настроенную асимметричную маршрутизацию (2 балла);
-- Есть описание и демонстрация того, как восстановить симметричную маршрутизация на стенде не уменьшая цены интерфейсов (1 балл).
+1. Выполнить `vagrant up`, в результате чего должен подняться стенд с ассиметричной маршрутизацией, но по факту стенд начинает работать только после повторного выполнения плейбука командой `ansible-playbook playbooks/ospf.yml` - почему так происходит, я не смог понять, возможно это связано со спецификой Vagrant'а. 
 
-Выполнение первых трёх пунктов являются необходимым для получения зачета по базовому домашнему заданию.
+После выполнения плейбука на роутере `r3` устанавливается стоимость интерфейса `eth2` в значение 100, поэтому при выполнении команды `ping -I 10.0.0.2 10.0.0.3` на роутере `r2` пакеты `ICMP echo request` уходят с `eth2`, а `ICMP echo reply` приходят уже на `eth1`. Проверить это можно с помощью утилиты `tcpdump` на `r2`.
 
-**ansible в процессе...**
+2. Для восстановления симметричной маршрутизации необходимо повысить до 100 стоимость интерфейса `eth1` на роутере `r3`. Проще всего это сделать с помощью изменения в файле `inventories/host_vars/r3.yml` значения `eth1_cost` на 100. Далее запустить плейбук `playbooks/ospf.yml`. После этого ospf пересчитает маршруты и `ICMP echo request` и `ICMP echo reply` снова будут ходить на роутере `r2` через `eth2`.
+
 
 
 
